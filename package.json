@@ -1,0 +1,27 @@
+{
+  "name": "@red-cup-engineering/campaign-rollup-projection-service",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Projects explicit work snapshots into campaign forests, actionable fronts, and bounded pretool context.",
+  "exports": {
+    ".": "./src/campaign-rollup.mjs",
+    "./campaign-pretool": "./src/campaign-pretool.mjs"
+  },
+  "bin": {
+    "project-campaign-rollup": "./scripts/project-campaign-rollup.mjs",
+    "project-campaign-pretool-context": "./scripts/project-campaign-pretool-context.mjs"
+  },
+  "files": [
+    "README.md",
+    "src",
+    "scripts"
+  ],
+  "scripts": {
+    "check": "node --check src/*.mjs scripts/*.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "sideEffects": false
+}
