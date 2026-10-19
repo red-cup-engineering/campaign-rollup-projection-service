@@ -23,5 +23,9 @@
   "engines": {
     "node": ">=22"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/red-cup-engineering/campaign-rollup-projection-service.git"
+  }
 }
