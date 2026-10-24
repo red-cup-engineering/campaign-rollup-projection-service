@@ -20,10 +20,6 @@ function objective(item){const lines=statedLines(item),target=field(lines,"objec
 function realChildren(id,byId,children,seen){const out=[];for(const childId of children.get(id)??[]){if(seen.has(childId))continue;const child=byId.get(childId);if(child===undefined||retired(child.workStatus))continue;if(markers.has(child.workKind))out.push(...realChildren(childId,byId,children,new Set([...seen,childId])));else out.push(childId);}return out;}
 function progress(item,children){if(children.length===0){if(item.gate!=="record"||retired(item.workStatus))return Object.freeze({done:0,total:0,ratio:0});const done=settled(item);return Object.freeze({done:done?1:0,total:1,ratio:done?1:0});}const done=children.reduce((sum,child)=>sum+child.progress.done,0),total=children.reduce((sum,child)=>sum+child.progress.total,0);return Object.freeze({done,total,ratio:total===0?0:done/total});}
 function leaves(node){const out=[];const walk=(value)=>{if(value.children.length===0){if(value.gate==="record")out.push(value);return;}for(const child of value.children)walk(child);};walk(node);return out;}
-function topoOrder(nodes,byId){const ids=new Set(nodes.map(({id})=>id)),incoming=new Map(nodes.map(({id})=>[id,0])),next=new Map(nodes.map(({id})=>[id,[]]));for(const node of nodes)for(const predecessor of array(byId.get(node.id)?.dependsOn)){if(!ids.has(predecessor))continue;incoming.set(node.id,(incoming.get(node.id)??0)+1);next.get(predecessor).push(node.id);}const queue=[...incoming].filter(([,count])=>count===0).map(([id])=>id).sort(),out=[];while(queue.length){const id=queue.shift();out.push(id);for(const child of next.get(id)??[]){incoming.set(child,incoming.get(child)-1);if(incoming.get(child)===0){queue.push(child);queue.sort();}}}return out.length===nodes.length?out:nodes.map(({id})=>id);}
-// Read the same original source graph across *all* projects and campaigns,
-// not just the current view's visible leaf IDs. Missing external sources are
-// unknown work, never already received predecessors.
 function dependencyGaps(item,byId){
   const gaps=[];
   for(const id of array(item.dependsOn)){
@@ -49,11 +45,12 @@ function front(campaign,byId){
     if(gaps.length){stalled.push(value);dependencyHolds.push(Object.freeze({task:value,needs:gaps}));}
     else advancing.push(value);
   }
-  // Keep original ordering on the same source DAG, but never derive
-  // executable readiness from topoOrder's cycle fallback or view truncation.
-  const order=topoOrder(all,byId);
+  // Every advancing task has independently cleared its predecessors,
+  // including cross-project dependencies. A full topological sort of all
+  // campaign tasks is unnecessary to pick the next ready task: retain the
+  // original in-progress-first rule, then the lexically first ready ID.
   const chosen=advancing.find(({id})=>byId.get(id)?.workStatus==="in-progress")??
-    order.map(id=>advancing.find(value=>value.id===id)).find(Boolean)??null;
+    advancing.reduce((best,value)=>best===null||value.id<best.id?value:best,null);
   const node=chosen===null?null:all.find(({id})=>id===chosen.id);
   return Object.freeze({
     advancing:Object.freeze(advancing),stalled:Object.freeze(stalled),
