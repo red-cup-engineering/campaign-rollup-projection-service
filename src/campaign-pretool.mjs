@@ -3,7 +3,7 @@ const tokens=(value)=>new Set(String(value).toLowerCase().match(/[a-z0-9][a-z0-9
 function packageSegment(file){const match=String(file).replace(/\\/gu,"/").match(/(lib|apps|services|sites)\/([^/]+)/u);return match===null?null:`${match[1]}/${match[2]}`;}
 /** Select the campaign plan/task context relevant to one explicit tool payload. */
 export function projectCampaignPretoolContext(reading,payload={}){const tool=payload.tool_name??payload.toolName;if(!/^(Edit|Write|MultiEdit|NotebookEdit)$/u.test(String(tool)))return null;const input=payload.tool_input??payload.toolInput??{},segment=packageSegment(input.file_path??input.filePath??input.path);if(segment===null)return null;const segmentTokens=tokens(`${segment} ${segment.split("/").at(-1)??""}`);let best=null;for(const campaign of reading.campaigns) {
-  const ready=new Set(array(campaign.front?.advancing).map(value=>value.id));
+  const ready=new Set((Array.isArray(campaign.front?.advancing)?campaign.front.advancing:[]).map(value=>value.id));
   // A borrowed view or lost precursor may suggest content but cannot mark
   // unreceived dependency Work ready for an editor transition.
   const walkReady=(node,plan)=>{
