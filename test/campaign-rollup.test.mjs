@@ -94,3 +94,35 @@ test("bounded multi-project source work preserves cross-project holds without qu
  assert.ok(view.campaigns[0].front.dependencyHolds.every(x=>x.needs[0].id==="outside"));
  assert.equal(view.current.task.id,"task-1");
 });
+
+
+test("generic complete never overrides explicitly unfinished original Work or hides a campaign",()=>{
+ const snapshot={generatedAt:"2026-10-24T06:00:00Z",state:"two-source conflicting completion",items:[
+   item("c","Campaign","campaign",[],{status:"complete",workStatus:"open"}),
+   item("p","Plan","plan",["c"]),
+   item("t","Engineering Work","task",["p"],{status:"complete",workStatus:"open"}),
+ ]};
+ const before=JSON.stringify(snapshot);
+ const view=projectCampaignRollup(snapshot);
+ assert.equal(view.campaigns.length,1,"explicitly open Campaign may not vanish");
+ assert.equal(view.campaigns[0].progress.done,0,"generic status cannot fabricate 100% completion");
+ assert.equal(view.campaigns[0].progress.total,1);
+ assert.deepEqual(view.campaigns[0].front.advancing.map(x=>x.id),["t"]);
+ assert.equal(view.current.task.id,"t");
+ assert.deepEqual(view.sourceStatusConflicts,[
+  {id:"c",status:"complete",workStatus:"open"},
+  {id:"t",status:"complete",workStatus:"open"},
+ ]);
+ assert.equal(view.counts.sourceStatusConflicts,2);
+ assert.equal(JSON.stringify(snapshot),before,"projection cannot mutate source testimony");
+ const finished={...snapshot,items:snapshot.items.map(x=>x.id==="t"?{...x,workStatus:"done"}:x)};
+ const finishedView=projectCampaignRollup(finished);
+ assert.equal(finishedView.campaigns[0].progress.done,1,"original explicit done can advance reported progress");
+ assert.equal(finishedView.campaigns[0].front.done.length,1);
+ assert.equal(finishedView.counts.sourceStatusConflicts,1,"source conflict readout changes without a second Work record");
+ const blocked={...snapshot,items:snapshot.items.map(x=>x.id==="t"?{...x,workStatus:"blocked"}:x)};
+ const blockedView=projectCampaignRollup(blocked);
+ assert.equal(blockedView.campaigns[0].progress.done,0);
+ assert.deepEqual(blockedView.campaigns[0].front.blocked.map(x=>x.id),["t"]);
+ assert.equal(blockedView.current,null,"generic complete cannot render a blocked task ready");
+});

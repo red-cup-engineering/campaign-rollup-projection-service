@@ -56,3 +56,13 @@ readouts: package publication, host selection, actual Asana/Jira/GitHub
 permissions, source-size/rate-limited benchmarks, buyer acceptance and
 economic settlement require independent receivers. Do not substitute a
 greened test or static Work picture for a paid client outcome.
+
+
+**Conflicting completion sources:** A generic imported `status: complete`
+never overrides an explicit `workStatus: open`, `blocked` or `in-progress`.
+The existing `front`, `progress`, Campaign-root filter, and personal Work
+focus all use this same rule. The additive `sourceStatusConflicts` gives exact
+source Work identifiers and both competing values (plus its count) so the
+original owner can reconcile the discrepancy; it is an observation, not a new
+Work state or a receiver's certificate. A conflict remains visible even
+when an unrelated campaign is omitted from the current focus.
