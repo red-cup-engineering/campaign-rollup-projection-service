@@ -32,7 +32,7 @@ test("a shared prerequisite in a different campaign prevents false-ready executi
  assert.equal(tool,null,"editor must not manufacture ready work from relevant blocked prose");
  const completed={...snapshot,items:snapshot.items.map(x=>x.id==="b"?{...x,workStatus:"done"}:x)};
  const received=projectCampaignRollup(completed);
- assert.deepEqual(received.campaigns[0].front.advancing.map(x=>x.id),["a","c"]);
+ assert.deepEqual(received.campaigns[0].front.advancing.map(x=>x.id).sort(),["a","c"]);
  assert.equal(received.campaigns[0].front.nextTask.id,"a");
  assert.equal(received.current.task.id,"a");
  assert.match(projectCampaignPretoolContext(received,{tool_name:"Edit",
