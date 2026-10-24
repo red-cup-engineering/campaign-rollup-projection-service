@@ -74,7 +74,8 @@ function current(campaigns,byId,session){
     const ready=new Set(campaign.front?.advancing?.map(value=>value.id)??[]);
     const open=leaves(campaign).filter(node=>ready.has(node.id));
     const leaf=(session===null?undefined:open.find(({id})=>byId.get(id)?.session===session))??
-      open.find(node=>node.workStatus==="in-progress")??open[0];
+      open.find(node=>node.workStatus==="in-progress")??
+      open.find(node=>node.id===campaign.front?.nextTask?.id)??open[0];
     if(leaf)candidates.push({campaign,leaf});
   }
   candidates.sort((a,b)=>a.campaign.progress.ratio-b.campaign.progress.ratio);
