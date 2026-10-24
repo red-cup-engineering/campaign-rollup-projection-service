@@ -1,0 +1,38 @@
+name: Native campaign Work receiving
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "test/**"
+      - "scripts/**"
+      - "package.json"
+      - "README.md"
+      - ".github/workflows/native-campaign-work.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-native-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Select exact source without persistent credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Select supported native Node 22
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "22"
+      - name: Check every original source and test module
+        run: |
+          for file in src/*.mjs scripts/*.mjs test/*.mjs; do
+            node --check "$file"
+          done
+      - name: Run existing native Work projection and editor regression suite
+        run: npm test
