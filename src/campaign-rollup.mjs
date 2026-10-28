@@ -10,7 +10,9 @@ const settledStatus=(status)=>status==="done"||retired(status);
 // Conflicting top-level "complete" and explicit "open" remain unresolved.
 const completed=(item)=>item?.workStatus==="done" ||
   item?.status==="complete"&&(item.workStatus===undefined||item.workStatus===null);
-const settled=(item)=>item.status==="complete"||settledStatus(item.workStatus);
+// The explicit Work state outranks an imported generic status. In particular,
+// status:complete + workStatus:open must remain open in both rollups and fronts.
+const settled=(item)=>completed(item)||retired(item.workStatus);
 const workType=(item)=>text(item.success)===null?"project":item.blockedBy!==null&&item.blockedBy!==undefined||array(item.dependsOn).length>0?"process":"task";
 const ref=(node)=>Object.freeze({id:node.id,title:node.title});
 
@@ -102,4 +104,11 @@ for(const item of snapshot.items){
     throw new TypeError("campaign rollup requires whole distinct dependency Work IDs");
   byId.set(item.id,item);
 }
-const children=new Map();for(const item of snapshot.items){const parent=array(item.contributesTo).map((id)=>byId.get(id)).find((candidate)=>candidate!==undefined&&rank(candidate)<rank(item));if(parent){const values=children.get(parent.id)??[];values.push(item.id);children.set(parent.id,values);}}const focus=text(params.campaign??params.q),roots=snapshot.items.filter((item)=>item.workKind==="campaign"&&!settled(item)&&(focus===null||item.id.toLowerCase().includes(focus.toLowerCase())||item.title.toLowerCase().includes(focus.toLowerCase()))),campaigns=Object.freeze(roots.map((root)=>build(root.id,byId,children,new Set([root.id]))));const allLeaves=campaigns.flatMap(leaves).filter((node)=>!retired(node.workStatus));return Object.freeze({kind:"campaign-rollup.projection",generatedAt:snapshot.generatedAt,source:snapshot.state??null,campaigns,current:current(campaigns,byId,text(params.session??params.session_id)),pointers:Object.freeze(campaigns.map(pointer)),counts:Object.freeze({campaigns:campaigns.length,projects:count(campaigns,"project"),plans:count(campaigns,"plan"),tasks:allLeaves.length,openTasks:allLeaves.filter((node)=>!settledStatus(node.workStatus)).length})});}
+const children=new Map();for(const item of snapshot.items){const parent=array(item.contributesTo).map((id)=>byId.get(id)).find((candidate)=>candidate!==undefined&&rank(candidate)<rank(item));if(parent){const values=children.get(parent.id)??[];values.push(item.id);children.set(parent.id,values);}}const focus=text(params.campaign??params.q),roots=snapshot.items.filter((item)=>item.workKind==="campaign"&&!settled(item)&&(focus===null||item.id.toLowerCase().includes(focus.toLowerCase())||item.title.toLowerCase().includes(focus.toLowerCase()))),campaigns=Object.freeze(roots.map((root)=>build(root.id,byId,children,new Set([root.id]))));const allLeaves=campaigns.flatMap(leaves).filter((node)=>!retired(node.workStatus));
+// Expose conflicting source testimony rather than quietly treating one
+// source system's generic completion flag as receiving of original Work.
+const sourceStatusConflicts=Object.freeze([...byId.values()]
+  .filter((item)=>item.status==="complete"&&item.workStatus!=null&&item.workStatus!=="done")
+  .map((item)=>Object.freeze({id:item.id,status:item.status,workStatus:item.workStatus}))
+  .sort((a,b)=>a.id.localeCompare(b.id)));
+return Object.freeze({kind:"campaign-rollup.projection",generatedAt:snapshot.generatedAt,source:snapshot.state??null,campaigns,current:current(campaigns,byId,text(params.session??params.session_id)),pointers:Object.freeze(campaigns.map(pointer)),sourceStatusConflicts,counts:Object.freeze({campaigns:campaigns.length,projects:count(campaigns,"project"),plans:count(campaigns,"plan"),tasks:allLeaves.length,openTasks:allLeaves.filter((node)=>!settledStatus(node.workStatus)).length,sourceStatusConflicts:sourceStatusConflicts.length})});}
